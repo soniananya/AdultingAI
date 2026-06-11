@@ -1,0 +1,16 @@
+# Web Framework & Server
+fastapi
+uvicorn[standard]
+
+# Database & Authentication
+supabase
+
+# AI Orchestration & Graph Logic
+langgraph
+langchain-core
+
+# LLM Provider (Assuming OpenAI; change if using Anthropic/Gemini)
+langchain-openai
+
+# Environment Variables
+python-dotenv
