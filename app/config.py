@@ -1,5 +1,4 @@
-print("CONFIG LOADED")
-print(__file__)
+
 from functools import lru_cache
 from pydantic_settings import BaseSettings
 from supabase import create_client, Client

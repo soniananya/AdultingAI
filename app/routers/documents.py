@@ -1,13 +1,43 @@
-from fastapi import APIRouter, UploadFile, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from supabase import Client
 from app.routers.users import get_current_user
 from app.config import get_supabase_client
-from app.services.storage import upload_file
-from uuid import UUID
+from app.services.storage import upload_file, get_file_bytes
+from app.services.extractor import (
+    extract_text_from_pdf,
+    extract_offer_letter_fields,
+    extract_salary_slip_fields,
+)
 
-router=APIRouter(prefix="/documents")
+router = APIRouter(prefix="/documents", tags=["documents"])
 
 
+# ========================================================
+def extract_document(
+    storage_url: str,
+    doc_type: str,
+    supabase: Client
+) -> dict:
+    """
+    Download an uploaded document, pull out its text, and run the
+    matching structured extractor. Returns a JSON-serializable dict
+    suitable for the documents.extracted_fields column.
+    """
+
+    file_bytes = get_file_bytes(storage_url, supabase)
+    text = extract_text_from_pdf(file_bytes)
+
+    if doc_type == "OFFER_LETTER":
+        return extract_offer_letter_fields(text).model_dump()
+
+    if doc_type == "SALARY_SLIP":
+        return extract_salary_slip_fields(text).model_dump()
+
+    # Unknown document type: store the raw text only.
+    return {"raw_text": text}
+
+
+# ========================================================
 @router.get("/")
 def get_documents(
     user=Depends(get_current_user),
@@ -24,7 +54,8 @@ def get_documents(
 
     return response.data
 
-#========================================================
+
+# ========================================================
 @router.get("/{doc_id}")
 def get_document(
     doc_id: int,
@@ -50,22 +81,28 @@ def get_document(
     return response.data
 
 
-#==================================================
+# ========================================================
 @router.post("/upload")
 def upload_document(
-    file: UploadFile,
-    doc_type: str,
+    file: UploadFile = File(...),
+    doc_type: str = Form(...),
     user=Depends(get_current_user),
     supabase: Client = Depends(get_supabase_client)
 ):
 
     # upload file to storage
-    storage_url = upload_file(file)
+    storage_url = upload_file(
+        user_id=user.id,
+        file=file,
+        doc_type=doc_type,
+        supabase=supabase
+    )
 
     # extract fields from document
     extracted_fields = extract_document(
         storage_url,
-        doc_type
+        doc_type,
+        supabase
     )
 
     response = (
@@ -83,64 +120,15 @@ def upload_document(
 
     document_id = response.data[0]["id"]
 
-    # trigger workflow
-    start_workflow(
-        user_id=user.id,
-        document_id=document_id,
-        doc_type=doc_type
-    )
-
+    # Analysis is triggered separately via POST /workflows/run
+    # (pass this document_id to run the matching workflow).
     return {
-        "document_id": document_id
+        "document_id": document_id,
+        "extracted_fields": extracted_fields
     }
 
 
-
-#===============================================
-@router.post("/upload")
-def upload_document(
-    file: UploadFile,
-    doc_type: str,
-    user=Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
-):
-
-    # upload file to storage
-    storage_url = upload_file(file)
-
-    # extract fields from document
-    extracted_fields = extract_document(
-        storage_url,
-        doc_type
-    )
-
-    response = (
-        supabase.table("documents")
-        .insert(
-            {
-                "user_id": user.id,
-                "type": doc_type,
-                "storage_url": storage_url,
-                "extracted_fields": extracted_fields
-            }
-        )
-        .execute()
-    )
-
-    document_id = response.data[0]["id"]
-
-    # trigger workflow
-    start_workflow(
-        user_id=user.id,
-        document_id=document_id,
-        doc_type=doc_type
-    )
-
-    return {
-        "document_id": document_id
-    }
-
-#=================================================*****************************
+# ========================================================
 @router.get("/{doc_id}/diff")
 def get_document_diff(
     doc_id: int,

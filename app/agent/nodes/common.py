@@ -1,7 +1,7 @@
 from langgraph.types import interrupt
 from app.config import get_supabase_client
 from app.services.supabase import get_life_state,upsert_life_state,save_reminder, update_workflow_status
-from app.config import get_supabase_client
+from app.models.lifestate import LifeStateSnapshot
 
 
 
@@ -9,9 +9,15 @@ def load_user_context_node(state):
 
     supabase = get_supabase_client()
 
-    life_state = get_life_state(
+    row = get_life_state(
         user_id=state["user_id"],
         supabase=supabase
+    )
+
+    life_state = (
+        LifeStateSnapshot(**row)
+        if row
+        else LifeStateSnapshot()
     )
 
     return {
@@ -45,43 +51,6 @@ def update_life_state_node(state):
     }
 
 
-#========================================================
-
-
-def create_reminder_node(state):
-
-    reminders = state.get(
-        "pending_reminders",
-        []
-    )
-
-    if not reminders:
-
-        return {
-            "reminder_ids": []
-        }
-
-    supabase = get_supabase_client()
-
-    reminder_ids = []
-
-    for reminder in reminders:
-
-        result = save_reminder(
-            user_id=state["user_id"],
-            workflow_id=state["workflow_id"],
-            title=reminder["title"],
-            fire_at=reminder["remind_at"],
-            supabase=supabase
-        )
-
-        reminder_ids.append(
-            result["id"]
-        )
-
-    return {
-        "reminder_ids": reminder_ids
-    }
 
 
 

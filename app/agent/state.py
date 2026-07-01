@@ -1,31 +1,50 @@
 from typing import TypedDict, Annotated
 
-from app.services.supabase import get_life_state 
+from pydantic import BaseModel
+
+from app.models.workflow import WorkflowType
+
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage
- 
-class LifeStateSnapshot(TypedDict):
+
+
+# =====================================================
+# LIFE STATE SNAPSHOT
+# =====================================================
+
+class LifeStateSnapshot(BaseModel):
+
     current_salary: float | None
+
     employer: str | None
 
     monthly_rent: float | None
 
     current_city: str | None
+
     housing_type: str | None
 
     employment_type: str | None
+
     joining_date: str | None
 
     recurring_bills: list
 
-    
+    resume_url: str | None
+
+    skills: list[str]
+
+# =====================================================
+# BASE GRAPH STATE
+# =====================================================
+
 class AdultingBaseState(TypedDict):
 
     user_id: str
 
     workflow_id: int
 
-    workflow_type: str
+    workflow_type: WorkflowType
 
     life_state: LifeStateSnapshot
 
@@ -35,6 +54,8 @@ class AdultingBaseState(TypedDict):
 
     pending_reminders: list[dict]
 
+    pending_artifacts: list[dict]
+
     errors: list[str]
 
     hitl_approved: bool | None
@@ -42,6 +63,9 @@ class AdultingBaseState(TypedDict):
     pending_action: dict | None
 
 
+# =====================================================
+# SALARY SLIP STATE
+# =====================================================
 
 class SalarySlipState(
     AdultingBaseState
@@ -55,9 +79,10 @@ class SalarySlipState(
 
     anomalies: list[str]
 
-    artifact: dict | None
 
-
+# =====================================================
+# OFFER LETTER STATE
+# =====================================================
 
 class OfferLetterState(
     AdultingBaseState
@@ -73,9 +98,10 @@ class OfferLetterState(
 
     negotiation_tips: list[str]
 
-    artifact: dict | None
 
-
+# =====================================================
+# RECURRING BILL STATE
+# =====================================================
 
 class RecurringBillState(
     AdultingBaseState
@@ -92,35 +118,89 @@ class RecurringBillState(
     reminder_id: int | None
 
 
+# =====================================================
+# JD ANALYSIS MODELS
+# =====================================================
+
+class JDRequirements(BaseModel):
+
+    must_have: list[str]
+
+    nice_to_have: list[str]
+
+    technologies: list[str]
+
+    experience_level: str | None
+
+
+class InterviewPrep(BaseModel):
+
+    key_topics: list[str]
+
+    likely_questions: list[str]
+
+    learning_priority: list[str]
+
+
+# =====================================================
+# JD ANALYSIS STATE
+# =====================================================
+
+class JDAnalysisState(
+    AdultingBaseState
+):
+
+    jd_text: str
+
+    resume_text: str
+
+    jd_requirements: JDRequirements
+
+    skill_gaps: list[str]
+
+    tailored_resume: str
+
+    interview_prep: InterviewPrep
+
+
+# =====================================================
+# INITIAL STATE FACTORY
+# =====================================================
 
 def initial_state(
-    user_id,
-    workflow_id,
-    workflow_type,
-    event_text
+    user_id: str,
+    workflow_id: int,
+    event_text: str,
+    extracted_fields=None
 ):
-    return{
-    "user_id": user_id,
 
-    "workflow_id": workflow_id,
+    # NOTE: life_state and workflow_type are populated by the graph itself
+    # (load_user_context_node loads life_state, classify_event sets workflow_type).
+    return {
 
-    "workflow_type": workflow_type,
+        "user_id": user_id,
 
-    "life_state": get_life_state(user_id),
+        "workflow_id": workflow_id,
 
-    "messages": [
-        HumanMessage(
-            content=event_text
-        )
-    ],
+        "life_state": None,
 
-    "pending_life_state_updates":{},
-    
-    "pending_reminders":[],
+        "extracted_fields": extracted_fields,
 
-    "errors": [],
+        "messages": [
+            HumanMessage(
+                content=event_text
+            )
+        ],
 
-    "hitl_approved": None,
+        "pending_life_state_updates": {},
 
-    "pending_action": None
-}
+        "pending_reminders": [],
+
+        "pending_artifacts": [],
+
+        "errors": [],
+
+        "hitl_approved": None,
+
+        "pending_action": None
+    }

@@ -1,16 +1,25 @@
 # Web Framework & Server
 fastapi
 uvicorn[standard]
+python-multipart          # required for file uploads (UploadFile / Form)
 
-# Database & Authentication
+# Database, Auth & Storage
 supabase
 
 # AI Orchestration & Graph Logic
 langgraph
+langgraph-checkpoint-postgres
 langchain-core
 
-# LLM Provider (Assuming OpenAI; change if using Anthropic/Gemini)
-langchain-openai
+# LLM Provider (Google Gemini)
+langchain-google-genai
 
-# Environment Variables
+# Postgres checkpointer driver
+psycopg[binary]
+
+# Document parsing
+pypdf
+
+# Settings & Environment Variables
+pydantic-settings
 python-dotenv

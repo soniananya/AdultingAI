@@ -11,35 +11,38 @@ def build_classifier_prompt(
     return f"""
 You are a workflow classifier.
 
-Choose exactly one workflow type.
+Choose exactly one workflow type: either OFFER_LETTER or JD_ANALYSIS.
 
 Workflow Types:
 
-1. SALARY_SLIP
-   Examples:
-   - Uploaded salary slip
-   - Payslip for May 2026
-   - Monthly salary statement
+1. OFFER_LETTER
 
-2. OFFER_LETTER
-   Examples:
-   - New job offer
-   - Employment offer letter
-   - Joining package
-   - Compensation letter
+Examples:
+- New job offer
+- Employment offer letter
+- Joining package
+- Compensation letter
 
-3. RECURRING_BILL
-   Examples:
-   - Electricity bill every month
-   - Rent reminder
-   - Internet bill reminder
-   - Credit card due reminder
+
+2. JD_ANALYSIS
+
+Examples:
+- I have an interview at Zepto
+- Can you tailor my resume for this role?
+- Analyze this job description
+- What should I prepare for this interview?
+- Backend Engineer JD
+- SDE role at Flipkart
+- Startup backend position
+- FAANG referral opportunity
+- Compare my resume against this job description
+- Help me prepare for this role
+
 
 User Event:
 
 {event_text}
 """
-
 
 #==========================================================
 
@@ -48,6 +51,7 @@ User Event:
 
 def classify_event(state):
 
+    event_text = state["messages"][-1].content
     structured_llm = (
         llm.with_structured_output(
             WorkflowClassification
@@ -56,7 +60,7 @@ def classify_event(state):
 
     result = structured_llm.invoke(
         build_classifier_prompt(
-            state["event_text"]
+            event_text
         )
     )
 

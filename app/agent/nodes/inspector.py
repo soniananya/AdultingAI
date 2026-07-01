@@ -9,7 +9,9 @@ def get_required_fields_for_workflow(
     workflow_type
 ):
 
-    if workflow_type == WorkflowType.JD_ANALYSIS:   #dont need for another workflows yet, because none req previous fields.
+
+    
+    if workflow_type == WorkflowType.JD_ANALYSIS:   # dont need for other workflows yet, because none req previous fields.
 
         return [
             "resume_url"
@@ -18,9 +20,7 @@ def get_required_fields_for_workflow(
     return []
 
 
-# =====================================================
-# INSPECT LIFE STATE
-# =====================================================
+# ===========================INSPECT LIFE STATE=========================
 
 def inspect_life_state(
     state

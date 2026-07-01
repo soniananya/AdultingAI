@@ -1,8 +1,101 @@
-nodes/gap_resolver.py
-function	what it does	tech
-resolve_gap(state)	LangGraph node. Takes first missing field, generates a friendly question, writes pending_question into state, sets status AWAITING_CONTEXT, calls interrupt(). Graph pauses here until answer_workflow() is called.
-LangGraph
-Python
-build_question_for_field(field_name, workflow_type)	Pure function. Maps field name to India-contextual question. e.g. "pan_number" → "What's your PAN number?" / "current_city" → "Which city are you currently in?"
-Python
-inject_answer(state, field_name, answer)	Validates user's answer, writes it into state.life_state, removes field from missing_fields. Called when graph resumes from interrupt.
+from langgraph.types import interrupt
+
+
+# =====================================================
+# QUESTION BUILDER
+# =====================================================
+
+def build_question_for_field(
+    field_name,
+    workflow_type
+):
+
+    questions = {
+
+        "resume_url":
+            "Please upload your current resume (PDF).",
+
+        "skills":
+            "List your key skills (for example: Python, FastAPI, SQL).",
+
+        "current_city":
+            "Which city are you currently living in?",
+    }
+
+    return questions.get(
+        field_name,
+        f"Please provide {field_name}"
+    )
+
+
+# =====================================================
+# RESOLVE GAP
+# =====================================================
+
+def resolve_gap(
+    state
+):
+
+    missing_fields = (
+        state["missing_fields"]
+    )
+
+    if not missing_fields:
+
+        return {}
+
+    field_name = (
+        missing_fields[0]
+    )
+
+    question = (
+        build_question_for_field(
+            field_name,
+            state["workflow_type"]
+        )
+    )
+
+    return interrupt(
+        {
+            "field_name":
+                field_name,
+
+            "question":
+                question
+        }
+    )
+
+
+# =====================================================
+# INJECT ANSWER
+# =====================================================
+
+def inject_answer(
+    state,
+    field_name,
+    answer
+):
+
+    setattr(
+        state["life_state"],
+        field_name,
+        answer
+    )
+
+    missing_fields = [
+
+        field
+
+        for field in state["missing_fields"]
+
+        if field != field_name
+    ]
+
+    return {
+
+        "life_state":
+            state["life_state"],
+
+        "missing_fields":
+            missing_fields
+    }

@@ -1,6 +1,8 @@
 from fastapi import UploadFile
 from supabase import Client
 
+from app.config import get_supabase_client
+
 
 def upload_file(
     user_id: str,
@@ -33,6 +35,17 @@ def get_file_bytes(
     )
 
     return file_bytes
+
+#=======================================================
+def download_file(
+    storage_url: str
+):
+    # Convenience wrapper for agent nodes, which don't have a
+    # FastAPI-injected Supabase client.
+    supabase = get_supabase_client()
+
+    return get_file_bytes(storage_url, supabase)
+
 #=======================================================
 
 def delete_file(

@@ -35,11 +35,11 @@ from app.agent.nodes.classifier import (
 )
 
 from app.agent.graphs.jd_analysis import (
-    build_jd_analysis_graph,
+    build_graph as build_jd_analysis_graph,
 )
 
 from app.agent.graphs.offer_letter import (
-    build_offer_letter_graph,
+    build_graph as build_offer_letter_graph,
 )
 
 from app.agent.checkpointer import (

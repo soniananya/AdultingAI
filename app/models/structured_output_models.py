@@ -26,7 +26,7 @@ class OfferLetterFields(BaseModel):
 class OfferAnalysis(BaseModel):
     red_flags: list[str]
     negotiation_tips: list[str]
-
+    approval_question: str
     requires_hitl: bool
 
 
@@ -62,3 +62,26 @@ class RecurringBillExtraction(BaseModel):
     due_day: int
 
     frequency: str
+
+
+
+
+#============================================
+from pydantic import BaseModel
+
+
+class JDFields(BaseModel):
+
+    role: str | None
+
+    seniority: str | None
+
+    required_skills: list[str]
+
+    nice_to_have_skills: list[str]
+
+    responsibilities: list[str]
+
+    red_flags: list[str]
+
+    keywords: list[str]

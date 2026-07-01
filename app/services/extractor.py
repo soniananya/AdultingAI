@@ -147,4 +147,42 @@ def analyze_offer_letter(fields:OfferLetterFields)->OfferAnalysis:
 
     return result
 
-#
+#jd node==========================================================
+def extract_jd_fields(
+    text: str
+) -> JDFields:
+
+    structured_llm = (
+        llm.with_structured_output(
+            JDFields
+        )
+    )
+
+    prompt = f"""
+Extract information from this job description.
+
+Rules:
+- Return only information present in the JD.
+- Do not invent skills.
+- Put mandatory requirements in required_skills.
+- Put optional requirements in nice_to_have_skills.
+- Detect hiring red flags.
+
+Possible red flags:
+- Unpaid trial work
+- Extremely broad responsibilities
+- Unrealistic experience requirements
+- Ambiguous compensation
+- Excessive working hours
+- Fake "startup hustle culture" language
+
+Job Description:
+
+{text}
+"""
+
+    result = structured_llm.invoke(
+        prompt
+    )
+
+    return result
